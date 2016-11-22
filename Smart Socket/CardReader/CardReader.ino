@@ -7,8 +7,8 @@
 #define SS_PIN 10
 #define RST_PIN 9
 
-#define RX 7
-#define TX 8
+#define RX 8
+#define TX 7
 #define AT_MODE 6
 
 #define LCD_ADDRESS 0x3F
@@ -16,6 +16,8 @@
 #define LCD_CHARS 16
 
 #define MASTER_CARD 1949178666
+#define ON "Power-1"
+#define OFF "Power-0"
 
 MFRC522 cardReader(SS_PIN, RST_PIN);
 SoftwareSerial bluetooth(RX, TX);
@@ -27,6 +29,7 @@ unsigned long* cards = NULL;
 byte numberOfCards = 0;
 
 bool masterDetected = false;
+bool power = false;
 
 bool isMaster(unsigned long uid);
 bool isisAuthorised(unsigned long uid);
@@ -35,13 +38,11 @@ void printOnScreen(const char* first = NULL, const char* second = NULL);
 
 
 void setup() {
-  Serial.begin(9600);
-
   pinMode(RX,INPUT);
   pinMode(TX,OUTPUT);
   bluetooth.begin(38400);
 
-  screen.begin();
+  screen.init();
   screen.backlight();
 
   SPI.begin();
@@ -59,7 +60,8 @@ void loop() {
     return;
   }
 
-  if (cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_1K) {
+  if (cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_1K && 
+      cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_4K) {
     return;
   }
 
@@ -92,7 +94,15 @@ void loop() {
   } else {
     if (isAuthorised(cardUid)) {
       printOnScreen("Access granted");
-      bluetooth.write("1");
+      if(!power){
+        bluetooth.println(ON);
+        power = true;
+      }else{
+        if(power){
+          bluetooth.println(OFF);
+          power = false;
+        }
+      }
     } else {
       printOnScreen("Access denied");
     }
