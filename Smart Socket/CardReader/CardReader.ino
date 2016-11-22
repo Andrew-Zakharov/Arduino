@@ -32,14 +32,14 @@ bool masterDetected = false;
 bool power = false;
 
 bool isMaster(unsigned long uid);
-bool isisAuthorised(unsigned long uid);
+bool isAuthorised(unsigned long uid);
 unsigned long toDecimal(byte uid[], byte size);
 void printOnScreen(const char* first = NULL, const char* second = NULL);
 
 
 void setup() {
-  pinMode(RX,INPUT);
-  pinMode(TX,OUTPUT);
+  pinMode(RX, INPUT);
+  pinMode(TX, OUTPUT);
   bluetooth.begin(38400);
 
   screen.init();
@@ -60,7 +60,7 @@ void loop() {
     return;
   }
 
-  if (cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_1K && 
+  if (cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_1K &&
       cardReader.PICC_GetType(cardReader.uid.sak) != MFRC522::PICC_TYPE_MIFARE_4K) {
     return;
   }
@@ -94,11 +94,11 @@ void loop() {
   } else {
     if (isAuthorised(cardUid)) {
       printOnScreen("Access granted");
-      if(!power){
+      if (!power) {
         bluetooth.println(ON);
         power = true;
-      }else{
-        if(power){
+      } else {
+        if (power) {
           bluetooth.println(OFF);
           power = false;
         }
