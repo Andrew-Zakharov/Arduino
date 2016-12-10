@@ -3,21 +3,23 @@
 #include <MFRC522.h>
 #include <Wire.h>
 #include <SPI.h>
+#include "CardReader.h"
 
 #define SS_PIN 10
 #define RST_PIN 9
 
 #define RX 8
 #define TX 7
-#define AT_MODE 6
+#define BLUETOOTH_STATE 6
+#define AT_MODE 5
 
 #define LCD_ADDRESS 0x3F
 #define LCD_LINES 2
 #define LCD_CHARS 16
 
 #define MASTER_CARD 1949178666
-#define ON "Power-1"
-#define OFF "Power-0"
+#define ON "Power_On"
+#define OFF "Power_Off"
 
 MFRC522 cardReader(SS_PIN, RST_PIN);
 SoftwareSerial bluetooth(RX, TX);
@@ -29,6 +31,7 @@ unsigned long* cards = NULL;
 byte numberOfCards = 0;
 
 bool masterDetected = false;
+bool bluetoothConnected = false;
 bool power = false;
 
 bool isMaster(unsigned long uid);
@@ -40,14 +43,23 @@ void printOnScreen(const char* first = NULL, const char* second = NULL);
 void setup() {
   pinMode(RX, INPUT);
   pinMode(TX, OUTPUT);
+  pinMode(BLUETOOTH_STATE,INPUT);
   bluetooth.begin(38400);
 
   screen.init();
   screen.backlight();
 
   SPI.begin();
-
   cardReader.PCD_Init();
+
+  printOnScreen("Waiting for", "connection...");
+
+  while(!bluetoothConnected){
+    if(digitalRead(BLUETOOTH_STATE) == HIGH){
+      bluetoothConnected = true;
+    }
+    delay(80);
+  }
   printOnScreen("Waiting for a ", "card...");
 }
 
@@ -163,27 +175,26 @@ void printOnScreen(const char* first, const char* second) {
 }
 
 void addNewCard(unsigned long cardUid) {
-  unsigned long* temp = (unsigned long*)malloc(numberOfCards + 1);
+  numberOfCards = numberOfCards + 1;
+  cards = (unsigned long*)realloc(cards,numberOfCards * sizeof(unsigned long));
 
-  for (byte i = 0; i < numberOfCards; i++) {
-    *(temp + i) = *(cards + i);
-  }
-
-  *(temp + numberOfCards) = cardUid;
-  numberOfCards++;
-  free(cards);
-  cards = temp;
+  *(cards + numberOfCards - 1) = cardUid;
 }
 
 void deleteCard(unsigned long cardUid) {
-  unsigned long* temp = (unsigned long*)malloc(numberOfCards - 1);
+  unsigned long* temp = (unsigned long*)malloc(numberOfCards);
   for (byte i = 0; i < numberOfCards; i++) {
-    if (*(cards + i) != cardUid) {
       *(temp + i) = *(cards + i);
+  }
+  free(cards);
+  cards = (unsigned long*)malloc((numberOfCards - 1) * sizeof(unsigned long*));
+  for (byte i = 0,j = 0; i < numberOfCards; i++) {
+    if(*(temp + i) != cardUid){
+      *(cards + j) = *(temp + i);
+      j++;
     }
   }
-  numberOfCards--;
-  free(cards);
-  cards = temp;
+  free(temp);
+  temp = NULL;
 }
 

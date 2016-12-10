@@ -5,42 +5,41 @@
 #define TX 7
 #define RELAY 5
 
-#define ON "Power-1\r\n"
-#define OFF "Power-0\r\n"
-#define KEY_SIZE 9
+#define ON "Power_On\r\n"
+#define OFF "Power_Off\r\n"
 
 SoftwareSerial bluetooth(RX, TX);
+bool dataExist = false;
 
 void setup() {
-  pinMode(RX,INPUT);
-  pinMode(TX,OUTPUT);
+  pinMode(RX, INPUT);
+  pinMode(TX, OUTPUT);
   bluetooth.begin(38400);
+  Serial.begin(9600);
   pinMode(RELAY, OUTPUT);
   digitalWrite(RELAY, HIGH);
 }
 
 void loop() {
-  byte i = 0;
-  char received[KEY_SIZE + 1] = {0};
-  bool dataExist = bluetooth.available();
-  
-  if(dataExist){
-    do{
-      if(i > KEY_SIZE){
+  dataExist = bluetooth.available();
+
+  if (dataExist) {
+    String received;
+    do {
+      if(received.endsWith("\n")){
         break;
       }
-      received[i] = bluetooth.read();
-      i++;
-      delay(10);
-    }while(bluetooth.available() > 0);
+      received += (char)bluetooth.read();
+      delay(50);
+    } while (bluetooth.available() > 0);
 
-    if(strcmp(received,ON) == 0){
-      digitalWrite(RELAY,LOW);
-    }else{
-      if(strcmp(received,OFF) == 0){
-        digitalWrite(RELAY,HIGH);
-      }
+    Serial.println(received);
+    if (received.equals(String(ON))) {
+      digitalWrite(RELAY, LOW);
+    }
+    if (received.equals(String(OFF))) {
+      digitalWrite(RELAY, HIGH);
     }
   }
-  delay(1000);
 }
+
